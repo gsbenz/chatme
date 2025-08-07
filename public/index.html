@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Chat</title>
+  <style>
+    #chat { height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px; }
+    #input { width: 80%; }
+  </style>
+</head>
+<body>
+  <div id="chat"></div>
+  <input id="input" placeholder="Type a message…"/><button id="send">Send</button>
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const btn = document.getElementById('send');
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+
+    function render() {
+      const messages = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+      chat.innerHTML = messages.map(m => `<div>[${m.user}]: ${m.text}</div>`).join('');
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      const arr = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+      arr.push(msg);
+      localStorage.setItem('chatMessages', JSON.stringify(arr));
+      render();
+    };
+
+    btn.onclick = () => {
+      const text = input.value.trim();
+      if (!text) return;
+      const msg = { user: 'You', text };
+      ws.send(JSON.stringify(msg));
+      const arr = JSON.parse(localStorage.getItem('chatMessages') || '[]');
+      arr.push(msg);
+      localStorage.setItem('chatMessages', JSON.stringify(arr));
+      input.value = '';
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>
